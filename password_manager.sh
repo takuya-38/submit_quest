@@ -4,6 +4,9 @@
 
 echo "パスワードマネージャーへようこそ！"
 
+echo "GPG鍵のユーザID(メールアドレス)を入力してください："
+read -p '>' user_id
+
 while true
 do
 	#ユーザーに選択肢を表示し入力を受け取る
@@ -19,14 +22,24 @@ do
 			read -p 'ユーザー名を入力してください:' user_name
 			read -p 'パスワードを入力してください:' password
 
-			#入力をパスワードファイルへ追加
+			#パスワードファイルの復号後、入力情報を追記
+                        gpg -a -o passwords.txt -d passwords.asc 2> /dev/null
 			echo "$service_name:$user_name:$password" >> passwords.txt
+
+			#追記されたパスワードファイルの暗号化
+			gpg -a -o passwords.asc -e -r $user_id passwords.txt
+			rm -f passwords.txt
+
 			echo -e "\nパスワードの追加は成功しました。";;
 
 		"Get Password")
-			#ユーザーからサービス名を受け取り、パスワードファイルから該当する情報を取得
+			#ユーザーからサービス名を受け取る
 			read -p 'サービス名を入力してください:' service_name
+
+			#パスワードファイルの復号後、該当情報を取得
+			gpg -a -o passwords.txt -d passwords.asc 2> /dev/null
 			creds=$(grep ^$service_name\: passwords.txt)
+			rm -f passwords.txt
 
 			#該当する情報が登録されている場合、表示する
 			if [ -z "$creds" ]
